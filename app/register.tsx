@@ -86,6 +86,7 @@ export default function RegisterScreen() {
         setDate(currentDate);
     };
 
+
     const showDatepicker = () => {
         setShowDatePicker(true);
     };
@@ -219,6 +220,7 @@ const styles = StyleSheet.create({
     },
     registerContainer: {
         margin: 20,
+        paddingTop: 40
     },
     maincolor: {
         color: "#344939",
