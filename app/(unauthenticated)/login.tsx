@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const api = 'http://localhost:3000'
+const api = 'https://military-back-ck4yc0d61-romathesuns-projects.vercel.app'
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -48,7 +48,7 @@ export default function LoginScreen() {
             await AsyncStorage.setItem('refreshToken', data.refreshToken);
 
             // Navigate to the home screen
-            router.replace('/');
+            router.replace('/(authenticated)/profile');
         } catch (error) {
             let errorMessage = 'An unexpected error occurred';
             if (error instanceof Error) {

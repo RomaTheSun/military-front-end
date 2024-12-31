@@ -1,5 +1,5 @@
 import { View } from "react-native";
-import LoginScreen from './login';
+import LoginScreen from './(unauthenticated)/login';
 
 export default function Index() {
   return (

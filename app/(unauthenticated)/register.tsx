@@ -15,7 +15,7 @@ import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'https://military-back-ck4yc0d61-romathesuns-projects.vercel.app';
 
 export default function RegisterScreen() {
     const router = useRouter();
