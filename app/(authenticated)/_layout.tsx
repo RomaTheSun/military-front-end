@@ -1,5 +1,5 @@
 import { BottomTabNavigator } from "@/components/bottom-tab-navigator";
-import { Tabs } from "expo-router";
+import { Stack, Tabs } from "expo-router";
 import { BookOpen, User2 } from "lucide-react-native";
 
 export default function AuthenticatedLayout() {
@@ -7,6 +7,7 @@ export default function AuthenticatedLayout() {
         <>
             <Tabs
                 screenOptions={{
+                    headerShown: false,
                     tabBarStyle: {
                         backgroundColor: '#A9B4AC',
                         borderTopWidth: 1,

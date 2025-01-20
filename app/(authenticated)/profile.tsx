@@ -6,8 +6,8 @@ import {
     TouchableOpacity,
     ScrollView,
     ActivityIndicator,
-    Alert,
     Platform,
+    KeyboardAvoidingView,
 } from 'react-native';
 import { Settings, LogOut } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -100,7 +100,10 @@ export default function ProfileScreen() {
     }
 
     return (
-        <View style={styles.container}>
+        <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
+        >
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Ваш кабінет</Text>
                 <View style={styles.headerIcons}>
@@ -140,7 +143,7 @@ export default function ProfileScreen() {
                 <View style={styles.section}>
                     <View style={styles.coursesList}>
                         <Text style={styles.sectionTitle}>Рекомендований курс</Text>
-                        <View style={{width:'90%',height:1, backgroundColor:'#344939CC',marginVertical:20}}/>
+                        <View style={{ width: '90%', height: 1, backgroundColor: '#344939CC', marginVertical: 20 }} />
                         <Text style={styles.sectionTitle}>Поточний прогрес</Text>
                         {courses.map((course, index) => (
                             <View key={index} style={styles.courseItem}>
@@ -159,7 +162,7 @@ export default function ProfileScreen() {
                     </View>
                 </View>
             </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
@@ -200,6 +203,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        paddingTop: 55,
         padding: 16,
         backgroundColor: '#A9B4AC',
         borderBottomWidth: 1,
