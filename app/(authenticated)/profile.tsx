@@ -12,12 +12,12 @@ import {
 import { Settings, LogOut } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiUrl } from "../../config"
 
 interface UserData {
     id: string;
     email: string;
     nickname: string;
-    // Add any other fields that your API returns
 }
 
 interface CourseProgress {
@@ -25,7 +25,6 @@ interface CourseProgress {
     progress: number;
 }
 
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'https://military-back-ck4yc0d61-romathesuns-projects.vercel.app';
 
 const courses: CourseProgress[] = [
     { name: 'Назва Курсу', progress: 25 },
@@ -51,7 +50,7 @@ export default function ProfileScreen() {
                 throw new Error('No access token found');
             }
 
-            const response = await fetch(`${API_URL}/user`, {
+            const response = await fetch(`${apiUrl}/user`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                 },

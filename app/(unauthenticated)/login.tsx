@@ -12,8 +12,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiUrl } from "../../config"
 
-const api = 'https://military-back-ck4yc0d61-romathesuns-projects.vercel.app'
 export default function LoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -29,7 +29,7 @@ export default function LoginScreen() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(api + '/login', {
+            const response = await fetch(`${apiUrl}/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

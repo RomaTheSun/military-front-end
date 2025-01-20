@@ -14,8 +14,7 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
-
-const API_URL = Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'https://military-back-ck4yc0d61-romathesuns-projects.vercel.app';
+import { apiUrl } from "../../config"
 
 export default function RegisterScreen() {
     const router = useRouter();
@@ -44,7 +43,7 @@ export default function RegisterScreen() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`${API_URL}/register`, {
+            const response = await fetch(`${apiUrl}/register`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
