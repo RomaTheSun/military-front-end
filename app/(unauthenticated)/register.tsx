@@ -16,6 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { apiUrl } from "../../config"
 
+
 export default function RegisterScreen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);

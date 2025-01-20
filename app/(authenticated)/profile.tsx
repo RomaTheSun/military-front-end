@@ -18,6 +18,7 @@ interface UserData {
     id: string;
     email: string;
     nickname: string;
+    // Add any other fields that your API returns
 }
 
 interface CourseProgress {
