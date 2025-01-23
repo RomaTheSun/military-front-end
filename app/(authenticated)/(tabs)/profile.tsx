@@ -12,13 +12,12 @@ import {
 import { Settings, LogOut } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiUrl } from "../../config"
+import { apiUrl } from "../../../config"
 
 interface UserData {
     id: string;
     email: string;
     nickname: string;
-    // Add any other fields that your API returns
 }
 
 interface CourseProgress {
@@ -109,8 +108,8 @@ export default function ProfileScreen() {
                 <View style={styles.headerIcons}>
                     <TouchableOpacity
                         style={styles.iconButton}
-                        onPress={() => console.log('Settings pressed')}
-                    >
+                        onPress={() => router.push("/(authenticated)/settings")}
+                        >
                         <Settings size={24} color="#344939" />
                     </TouchableOpacity>
                     <TouchableOpacity

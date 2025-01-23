@@ -180,14 +180,14 @@ const styles = StyleSheet.create({
         marginBottom: 70,
     },
     button: {
-        backgroundColor: '#344939',
+        backgroundColor: '#677466',
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
     },
     buttonSm: {
         marginTop: 10,
-        backgroundColor: '#344939',
+        backgroundColor: '#677466',
         padding: 5,
         borderRadius: 10,
         alignItems: 'center',

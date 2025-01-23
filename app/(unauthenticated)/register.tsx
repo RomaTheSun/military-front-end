@@ -16,7 +16,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { apiUrl } from "../../config"
 
-
 export default function RegisterScreen() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -294,7 +293,7 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
     button: {
-        backgroundColor: '#344939',
+        backgroundColor: '#677466',
         padding: 15,
         borderRadius: 10,
         alignItems: 'center',
