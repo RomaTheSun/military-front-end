@@ -21,49 +21,71 @@ interface UserData {
 }
 
 interface CourseProgress {
-    name: string;
-    progress: number;
+    id: string
+    title: string
+    progress: number
 }
-
-
-const courses: CourseProgress[] = [
-    { name: 'Назва Курсу', progress: 25 },
-    { name: 'Назва Курсу', progress: 25 },
-    { name: 'Назва Курсу', progress: 25 },
-    { name: 'Назва Курсу', progress: 25 },
-];
+interface Course {
+    id: string;
+    title: string;
+}
+interface Progress {
+    course_id: string;
+    completed: boolean;
+}
 
 export default function ProfileScreen() {
     const router = useRouter();
     const [userData, setUserData] = useState<UserData | null>(null);
+    const [courses, setCourses] = useState<CourseProgress[]>([])
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const fetchUserData = useCallback(async () => {
         try {
-            const token = await AsyncStorage.getItem('accessToken');
+            setIsLoading(true)
+            const token = await AsyncStorage.getItem("accessToken")
             if (!token) {
-                throw new Error('No access token found');
+                throw new Error("No access token found")
             }
 
-            const response = await fetch(`${apiUrl}/user`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                },
-            });
+            const [userResponse, coursesResponse, progressResponse] = await Promise.all([
+                fetch(`${apiUrl}/user`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch(`${apiUrl}/courses`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch(`${apiUrl}/user/progress`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+            ])
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch user data');
+            if (!userResponse.ok || !coursesResponse.ok || !progressResponse.ok) {
+                throw new Error("Failed to fetch data")
             }
 
-            const data = await response.json();
-            setUserData(data);
+            const userData = await userResponse.json()
+            const coursesData = await coursesResponse.json()
+            const progressData = await progressResponse.json()
+
+            setUserData(userData)
+
+            const coursesWithProgress = coursesData.map((course: Course) => {
+                const courseProgress = progressData.filter((p : Progress) => p.course_id === course.id)
+                const completedChapters = courseProgress.filter((p: Progress) => p.completed).length
+                const progress = courseProgress.length > 0 ? (completedChapters / courseProgress.length) * 100 : 0
+                return { id: course.id, title: course.title, progress }
+            })
+
+            setCourses(coursesWithProgress)
+            setError(null)
         } catch (err) {
-            setError(err instanceof Error ? err.message : 'An error occurred');
+            setError(err instanceof Error ? err.message : "An error occurred")
         } finally {
-            setIsLoading(false);
+            setIsLoading(false)
         }
-    }, []);
+    }, [])
 
     useEffect(() => {
         fetchUserData();
@@ -150,20 +172,17 @@ export default function ProfileScreen() {
                         <Text style={styles.sectionTitle}>Рекомендований курс</Text>
                         <View style={{ width: '90%', height: 1, backgroundColor: '#344939CC', marginVertical: 20 }} />
                         <Text style={styles.sectionTitle}>Поточний прогрес</Text>
-                        {courses.map((course, index) => (
-                            <View key={index} style={styles.courseItem}>
-                                <Text style={styles.courseName}>{course.name}</Text>
-                                <View style={styles.progressBar}>
-                                    <View
-                                        style={[
-                                            styles.progressFill,
-                                            { width: `${course.progress}%` }
-                                        ]}
-                                    />
+                        <View style={styles.coursesList}>
+                            {courses.map((course) => (
+                                <View key={course.id} style={styles.courseItem}>
+                                    <Text style={styles.courseName}>{course.title}</Text>
+                                    <View style={styles.progressBar}>
+                                        <View style={[styles.progressFill, { width: `${course.progress}%` }]} />
+                                    </View>
+                                    <Text style={styles.progressText}>{`${Math.round(course.progress)}%`}</Text>
                                 </View>
-                                <Text style={styles.progressText}>{course.progress}%</Text>
-                            </View>
-                        ))}
+                            ))}
+                        </View>
                     </View>
                 </View>
             </ScrollView>
@@ -286,6 +305,10 @@ const styles = StyleSheet.create({
         backgroundColor: '#A9B4AC',
         borderRadius: 8,
         padding: 16,
+        shadowColor:'#000000',
+        shadowOffset: {width: 0, height:2},
+        shadowRadius: 4,
+        shadowOpacity: 0.4,
     },
     courseItem: {
         height: 50,
@@ -299,10 +322,14 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(0, 0, 0, 0.15)',
         padding: 10,
         borderRadius: 5,
+        shadowColor:'#000000',
+        shadowOffset: {width: 0, height:2},
+        shadowRadius: 4,
+        shadowOpacity: 0.4,
     },
     courseName: {
-        fontSize: 16,
-        color: '#344939',
+        fontSize: 15,
+        color: '#6A776D',
         marginBottom: 8,
     },
     progressBar: {

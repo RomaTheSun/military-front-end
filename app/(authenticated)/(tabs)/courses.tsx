@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native"
-import { useRouter } from "expo-router"
+import { RelativePathString, useRouter } from "expo-router"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { apiUrl } from "../../../config"
 
@@ -69,7 +69,7 @@ export default function CoursesScreen() {
     }
 
     const renderCourseItem = ({ item }: { item: CourseWithProgress }) => (
-        <TouchableOpacity style={styles.courseItem} onPress={() => router.push(`/course/${item.id}`)}>
+        <TouchableOpacity style={styles.courseItem} onPress={() => router.push(`/course/${item.id}` as RelativePathString)}>
             <Text style={styles.courseTitle}>{item.title}</Text>
             <Text style={styles.courseDescription}>{item.description}</Text>
             <View style={styles.progressBar}>
@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
     },
     header: {
         padding: 16,
+        paddingTop: 55,
         backgroundColor: "#A9B4AC",
         borderBottomWidth: 1,
         borderBottomColor: "#6A776D",
