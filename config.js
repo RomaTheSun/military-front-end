@@ -1,1 +1,1 @@
-export const apiUrl = "https://military-back-2957o0oha-romathesuns-projects.vercel.app"
+export const apiUrl = "https://military-back-bw5ujka2u-romathesuns-projects.vercel.app"

@@ -72,8 +72,8 @@ export default function SettingsScreen() {
                 throw new Error("No access token found")
             }
 
-            const response = await fetch(`${apiUrl}/user/update-nickname`, {
-                method: "POST",
+            const response = await fetch(`${apiUrl}/user/nickname`, {
+                method: "PUT",
                 headers: {
                     Authorization: `Bearer ${token}`,
                     "Content-Type": "application/json",

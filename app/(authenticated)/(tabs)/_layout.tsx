@@ -18,14 +18,14 @@ export default function TabsLayout() {
             <Tabs.Screen
                 name="courses"
                 options={{
-                    tabBarLabel: "Курси",
+                    tabBarLabel: "",
                     tabBarIcon: ({ color, size }) => <BookOpen color={color} size={size} />,
                 }}
             />
             <Tabs.Screen
                 name="profile"
                 options={{
-                    tabBarLabel: "Профіль",
+                    tabBarLabel: "",
                     tabBarIcon: ({ color, size }) => <User2 color={color} size={size} />,
                 }}
             />

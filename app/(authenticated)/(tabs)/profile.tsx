@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,7 @@ import {
     KeyboardAvoidingView,
 } from 'react-native';
 import { Settings, LogOut } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiUrl } from "../../../config"
 
@@ -39,11 +39,7 @@ export default function ProfileScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        fetchUserData();
-    }, []);
-
-    const fetchUserData = async () => {
+    const fetchUserData = useCallback(async () => {
         try {
             const token = await AsyncStorage.getItem('accessToken');
             if (!token) {
@@ -67,7 +63,17 @@ export default function ProfileScreen() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchUserData();
+    }, [fetchUserData]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchUserData()
+        }, [fetchUserData]),
+    )
 
     const handleLogout = async () => {
         try {
@@ -99,9 +105,9 @@ export default function ProfileScreen() {
     }
 
     return (
-        <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.container}
+        <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.container}
         >
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Ваш кабінет</Text>
@@ -109,7 +115,7 @@ export default function ProfileScreen() {
                     <TouchableOpacity
                         style={styles.iconButton}
                         onPress={() => router.push("/(authenticated)/settings")}
-                        >
+                    >
                         <Settings size={24} color="#344939" />
                     </TouchableOpacity>
                     <TouchableOpacity

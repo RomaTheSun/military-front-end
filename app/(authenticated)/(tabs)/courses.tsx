@@ -1,116 +1,165 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+"use client"
 
-interface CourseProgress {
-    name: string;
-    progress: number;
+import { useState, useEffect } from "react"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native"
+import { useRouter } from "expo-router"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { apiUrl } from "../../../config"
+
+interface Course {
+    id: string
+    title: string
+    description: string
 }
 
-const courses: CourseProgress[] = [
-    { name: 'Назва Курсу', progress: 25 },
-    { name: 'Назва Курсу', progress: 25 },
-    { name: 'Назва Курсу', progress: 25 },
-    { name: 'Назва Курсу', progress: 25 },
-];
+interface UserProgress {
+    user_id: string
+    course_id: string
+    chapter_id: string
+    completed: boolean
+}
+
+interface CourseWithProgress extends Course {
+    progress: number
+}
+
 export default function CoursesScreen() {
+    const [courses, setCourses] = useState<CourseWithProgress[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const router = useRouter()
+
+    useEffect(() => {
+        fetchCoursesAndProgress()
+    }, [])
+
+    const fetchCoursesAndProgress = async () => {
+        try {
+            const token = await AsyncStorage.getItem("accessToken")
+            if (!token) throw new Error("No access token found")
+
+            const [coursesResponse, progressResponse] = await Promise.all([
+                fetch(`${apiUrl}/courses`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch(`${apiUrl}/user/progress`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+            ])
+
+            if (!coursesResponse.ok || !progressResponse.ok) {
+                throw new Error("Failed to fetch data")
+            }
+
+            const coursesData: Course[] = await coursesResponse.json()
+            const progressData: UserProgress[] = await progressResponse.json()
+
+            const coursesWithProgress = coursesData.map((course) => {
+                const courseProgress = progressData.filter((p) => p.course_id === course.id)
+                const completedChapters = courseProgress.filter((p) => p.completed).length
+                const progress = courseProgress.length > 0 ? (completedChapters / courseProgress.length) * 100 : 0
+                return { ...course, progress }
+            })
+
+            setCourses(coursesWithProgress)
+        } catch (error) {
+            console.error("Error fetching courses and progress:", error)
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const renderCourseItem = ({ item }: { item: CourseWithProgress }) => (
+        <TouchableOpacity style={styles.courseItem} onPress={() => router.push(`/course/${item.id}`)}>
+            <Text style={styles.courseTitle}>{item.title}</Text>
+            <Text style={styles.courseDescription}>{item.description}</Text>
+            <View style={styles.progressBar}>
+                <View style={[styles.progressFill, { width: `${item.progress}%` }]} />
+            </View>
+            <Text style={styles.progressText}>{`${Math.round(item.progress)}% completed`}</Text>
+        </TouchableOpacity>
+    )
+
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#344939" />
+            </View>
+        )
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Курси</Text>
             </View>
-            <View style={styles.content}>
-                <View style={styles.coursesList}>
-                    <Text style={styles.sectionTitle}>Рекомендований курс</Text>
-                    <View style={{ width: '90%', height: 1, backgroundColor: '#344939CC', marginVertical: 20 }} />
-                    <Text style={styles.sectionTitle}>Курси</Text>
-                    {courses.map((course, index) => (
-                        <View key={index} style={styles.courseItem}>
-                            <Text style={styles.courseName}>{course.name}</Text>
-                            <View style={styles.progressBar}>
-                                <View
-                                    style={[
-                                        styles.progressFill,
-                                        { width: `${course.progress}%` }
-                                    ]}
-                                />
-                            </View>
-                            <Text style={styles.progressText}>{course.progress}%</Text>
-                        </View>
-                    ))}
-                </View>
-            </View>
+            <FlatList
+                data={courses}
+                renderItem={renderCourseItem}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.coursesList}
+            />
         </View>
-    );
+    )
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#CCD4C5',
+        backgroundColor: "#CCD4C5",
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#CCD4C5",
     },
     header: {
-        paddingTop: 55,
         padding: 16,
-        backgroundColor: '#A9B4AC',
+        backgroundColor: "#A9B4AC",
         borderBottomWidth: 1,
-        borderBottomColor: '#6A776D',
+        borderBottomColor: "#6A776D",
     },
     headerTitle: {
         fontSize: 24,
-        fontWeight: '600',
-        color: '#344939',
-    },
-    content: {
-        flex: 1,
-        padding: 16,
-    },
-    sectionTitle: {
-        fontSize: 16,
-        color: '#6A776D',
-        marginBottom: 11,
+        fontWeight: "600",
+        color: "#344939",
     },
     coursesList: {
-        flex: 1,
-        alignItems: 'center',
-        borderRadius: 8,
         padding: 16,
     },
     courseItem: {
-        backgroundColor: '#A9B4AC',
-        height: 50,
-        width: '100%',
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+        backgroundColor: "#A9B4AC",
+        borderRadius: 8,
+        padding: 16,
         marginBottom: 16,
-        borderWidth: 1,
-        borderColor: 'rgba(0, 0, 0, 0.15)',
-        padding: 10,
-        borderRadius: 5,
     },
-    courseName: {
-        fontSize: 16,
-        color: '#344939',
+    courseTitle: {
+        fontSize: 18,
+        fontWeight: "600",
+        color: "#344939",
         marginBottom: 8,
     },
+    courseDescription: {
+        fontSize: 14,
+        color: "#6A776D",
+        marginBottom: 12,
+    },
     progressBar: {
-        width: '50%',
-        height: 16,
-        backgroundColor: '#CCD4C5',
+        height: 8,
+        backgroundColor: "#CCD4C5",
         borderRadius: 4,
-        overflow: 'hidden',
+        overflow: "hidden",
         marginBottom: 4,
     },
     progressFill: {
-        height: '100%',
-        backgroundColor: '#344939',
+        height: "100%",
+        backgroundColor: "#344939",
         borderRadius: 4,
     },
     progressText: {
-        fontSize: 14,
-        color: '#6A776D',
-        textAlign: 'right',
+        fontSize: 12,
+        color: "#6A776D",
+        textAlign: "right",
     },
-});
+})
 
