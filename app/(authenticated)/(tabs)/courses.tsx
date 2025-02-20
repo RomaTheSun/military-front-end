@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator }
 import { RelativePathString, useRouter } from "expo-router"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { apiUrl } from "../../../config"
+import { Settings, LogOut } from 'lucide-react-native';
 
 interface Course {
     id: string
@@ -74,10 +75,20 @@ export default function CoursesScreen() {
             <Text style={styles.courseDescription}>{item.description}</Text>
             <View style={styles.progressBar}>
                 <View style={[styles.progressFill, { width: `${item.progress}%` }]} />
+                <Text style={styles.progressText}>{`${Math.round(item.progress)}%`}</Text>
             </View>
-            <Text style={styles.progressText}>{`${Math.round(item.progress)}% completed`}</Text>
         </TouchableOpacity>
     )
+
+    const handleLogout = async () => {
+        try {
+            await AsyncStorage.removeItem('accessToken');
+            await AsyncStorage.removeItem('refreshToken');
+            router.replace('/login');
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -91,6 +102,20 @@ export default function CoursesScreen() {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Курси</Text>
+                <View style={styles.headerIcons}>
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={() => router.push("/(authenticated)/settings")}
+                    >
+                        <Settings size={24} color="#344939" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={styles.iconButton}
+                        onPress={handleLogout}
+                    >
+                        <LogOut size={24} color="#344939" />
+                    </TouchableOpacity>
+                </View>
             </View>
             <FlatList
                 data={courses}
@@ -114,11 +139,14 @@ const styles = StyleSheet.create({
         backgroundColor: "#CCD4C5",
     },
     header: {
-        padding: 16,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingTop: 55,
-        backgroundColor: "#A9B4AC",
+        padding: 16,
+        backgroundColor: '#A9B4AC',
         borderBottomWidth: 1,
-        borderBottomColor: "#6A776D",
+        borderBottomColor: '#6A776D',
     },
     headerTitle: {
         fontSize: 24,
@@ -146,7 +174,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     progressBar: {
-        height: 8,
+        height: 16,
         backgroundColor: "#CCD4C5",
         borderRadius: 4,
         overflow: "hidden",
@@ -158,9 +186,18 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     progressText: {
-        fontSize: 12,
-        color: "#6A776D",
-        textAlign: "right",
+        position: 'absolute',
+        fontSize: 14,
+        color: '#6A776D',
+        left: '50%',
+        transform: [{ translateX: '-50%' }],
+    },
+    headerIcons: {
+        flexDirection: 'row',
+        gap: 16,
+    },
+    iconButton: {
+        padding: 4,
     },
 })
 

@@ -172,17 +172,15 @@ export default function ProfileScreen() {
                         <Text style={styles.sectionTitle}>Рекомендований курс</Text>
                         <View style={{ width: '90%', height: 1, backgroundColor: '#344939CC', marginVertical: 20 }} />
                         <Text style={styles.sectionTitle}>Поточний прогрес</Text>
-                        <View style={styles.coursesList}>
                             {courses.map((course) => (
-                                <View key={course.id} style={styles.courseItem}>
+                                <TouchableOpacity key={course.id} style={styles.courseItem} onPress={() => router.push(`/course/${course.id}`)}>
                                     <Text style={styles.courseName}>{course.title}</Text>
                                     <View style={styles.progressBar}>
                                         <View style={[styles.progressFill, { width: `${course.progress}%` }]} />
+                                        <Text style={styles.progressText}>{`${Math.round(course.progress)}%`}</Text>
                                     </View>
-                                    <Text style={styles.progressText}>{`${Math.round(course.progress)}%`}</Text>
-                                </View>
+                                </TouchableOpacity>
                             ))}
-                        </View>
                     </View>
                 </View>
             </ScrollView>
@@ -346,9 +344,11 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     progressText: {
+        position: 'absolute',
         fontSize: 14,
         color: '#6A776D',
-        textAlign: 'right',
+        left: '50%',
+        transform: [{ translateX: '-50%' }],
     },
 });
 

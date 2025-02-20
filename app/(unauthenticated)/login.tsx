@@ -10,7 +10,7 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { RelativePathString, useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiUrl } from "../../config"
 
@@ -48,7 +48,7 @@ export default function LoginScreen() {
             await AsyncStorage.setItem('refreshToken', data.refreshToken);
 
             // Navigate to the home screen
-            router.replace('/(authenticated)/profile');
+            router.replace(`/(authenticated)/profile` as RelativePathString);
         } catch (error) {
             let errorMessage = 'An unexpected error occurred';
             if (error instanceof Error) {

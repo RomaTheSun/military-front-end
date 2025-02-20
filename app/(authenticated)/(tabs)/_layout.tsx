@@ -29,6 +29,11 @@ export default function TabsLayout() {
                     tabBarIcon: ({ color, size }) => <User2 color={color} size={size} />,
                 }}
             />
+            <Tabs.Screen
+
+                name="course/[id]"
+                options={{tabBarItemStyle: {display: 'none'}}}
+            />
         </Tabs>
     )
 }
