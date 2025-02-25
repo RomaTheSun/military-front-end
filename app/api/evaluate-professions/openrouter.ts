@@ -1,10 +1,11 @@
 import OpenAI from "openai"
 import { NextResponse } from "next/server"
 import { professionDescriptions } from "../../../types/profession-test"
+import { OPENROUTER_API_KEY } from "@/config"
 
 const openai = new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENROUTER_API_KEY,
+    apiKey: OPENROUTER_API_KEY,
 })
 
 export async function POST(request: Request) {
