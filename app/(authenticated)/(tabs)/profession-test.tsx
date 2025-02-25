@@ -1,11 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
-import { Settings, Share2, CheckSquare, Square, LogOut, RotateCcw } from "lucide-react-native"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native"
+import { Settings, Share2, CheckSquare, Square, RotateCcw } from "lucide-react-native"
 import { useRouter } from "expo-router"
 import { testQuestions, type MilitaryProfession, professionDescriptions } from "../../../types/profession-test"
-import AsyncStorage from "@react-native-async-storage/async-storage"
 
 interface Answer {
     questionId: number
@@ -17,6 +16,8 @@ export default function ProfessionTestScreen() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [answers, setAnswers] = useState<Answer[]>([])
     const [isComplete, setIsComplete] = useState(false)
+    const [aiSuggestions, setAiSuggestions] = useState<string | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
 
     const currentQuestion = testQuestions[currentQuestionIndex]
 
@@ -38,11 +39,14 @@ export default function ProfessionTestScreen() {
 
         setAnswers(newAnswers)
     }
+
     const resetTest = () => {
         setCurrentQuestionIndex(0)
         setAnswers([])
         setIsComplete(false)
+        setAiSuggestions(null)
     }
+
     const calculateResults = () => {
         const scores: Record<MilitaryProfession, number> = {
             combat_officer: 0,
@@ -80,7 +84,7 @@ export default function ProfessionTestScreen() {
         if (currentQuestionIndex < testQuestions.length - 1) {
             setCurrentQuestionIndex(currentQuestionIndex + 1)
         } else {
-            setIsComplete(true)
+            completeTest()
         }
     }
 
@@ -90,17 +94,34 @@ export default function ProfessionTestScreen() {
         }
     }
 
-    const selectedOptionId = answers.find((a) => a.questionId === currentQuestion.id)?.optionId
+    const completeTest = async () => {
+        setIsLoading(true)
+        setIsComplete(true)
 
-    const handleLogout = async () => {
         try {
-            await AsyncStorage.removeItem('accessToken');
-            await AsyncStorage.removeItem('refreshToken');
-            router.replace('/login');
+            const response = await fetch("/api/evaluate-profession", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ answers }),
+            })
+
+            if (!response.ok) {
+                throw new Error("Failed to get AI suggestions")
+            }
+
+            const data = await response.json()
+            setAiSuggestions(data.suggestions)
         } catch (error) {
-            console.error('Error logging out:', error);
+            console.error("Error getting AI suggestions:", error)
+            // Handle error (e.g., show an error message to the user)
+        } finally {
+            setIsLoading(false)
         }
-    };
+    }
+
+    const selectedOptionId = answers.find((a) => a.questionId === currentQuestion.id)?.optionId
 
     if (isComplete) {
         const results = calculateResults()
@@ -114,38 +135,36 @@ export default function ProfessionTestScreen() {
         return (
             <View style={styles.container}>
                 <View style={styles.header}>
-                    <Text style={styles.headerTitle}>Результати Тесту</Text>
-                    <View style={styles.headerIcons}>
-                        <TouchableOpacity
-                            style={styles.iconButton}
-                            onPress={() => router.push("/(authenticated)/settings")}
-                        >
-                            <Settings size={24} color="#344939" />
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={styles.iconButton}
-                            onPress={handleLogout}
-                        >
-                            <LogOut size={24} color="#344939" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-                <ScrollView style={styles.content}>
+                    <Text style={styles.headerTitle}>Результати тесту</Text>
                     <TouchableOpacity style={styles.retakeButton} onPress={resetTest}>
                         <RotateCcw size={24} color="#344939" />
                         <Text style={styles.retakeButtonText}>Пройти тест знову</Text>
                     </TouchableOpacity>
-                    <Text style={styles.resultsTitle}>Ваші результати показують наступну сумісність:</Text>
-                    {sortedResults.map(({ profession, percentage }) => (
-                        <View key={profession} style={styles.resultItem}>
-                            <Text style={styles.professionTitle}>{professionDescriptions[profession].title}</Text>
-                            <Text style={styles.professionDescription}>{professionDescriptions[profession].description}</Text>
-                            <View style={styles.progressBar}>
-                                <View style={[styles.progressFill, { width: `${percentage}%` }]} />
-                            </View>
-                            <Text style={styles.percentageText}>{percentage}%</Text>
-                        </View>
-                    ))}
+                </View>
+                <ScrollView style={styles.content}>
+                    {isLoading ? (
+                        <ActivityIndicator size="large" color="#344939" />
+                    ) : (
+                        <>
+                            <Text style={styles.resultsTitle}>Ваші результати показують наступну сумісність:</Text>
+                            {sortedResults.map(({ profession, percentage }) => (
+                                <View key={profession} style={styles.resultItem}>
+                                    <Text style={styles.professionTitle}>{professionDescriptions[profession].title}</Text>
+                                    <Text style={styles.professionDescription}>{professionDescriptions[profession].description}</Text>
+                                    <View style={styles.progressBar}>
+                                        <View style={[styles.progressFill, { width: `${percentage}%` }]} />
+                                    </View>
+                                    <Text style={styles.percentageText}>{percentage}%</Text>
+                                </View>
+                            ))}
+                            {aiSuggestions && (
+                                <View style={styles.aiSuggestionsContainer}>
+                                    <Text style={styles.aiSuggestionsTitle}>AI-рекомендації:</Text>
+                                    <Text style={styles.aiSuggestionsText}>{aiSuggestions}</Text>
+                                </View>
+                            )}
+                        </>
+                    )}
                 </ScrollView>
             </View>
         )
@@ -154,19 +173,13 @@ export default function ProfessionTestScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Тест</Text>
+                <Text style={styles.headerTitle}>Курси</Text>
                 <View style={styles.headerIcons}>
-                    <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={() => router.push("/(authenticated)/settings")}
-                    >
+                    <TouchableOpacity style={styles.iconButton}>
                         <Settings size={24} color="#344939" />
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={handleLogout}
-                    >
-                        <LogOut size={24} color="#344939" />
+                    <TouchableOpacity style={styles.iconButton}>
+                        <Share2 size={24} color="#344939" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -201,7 +214,9 @@ export default function ProfessionTestScreen() {
                         onPress={goToNextQuestion}
                         disabled={!selectedOptionId}
                     >
-                        <Text style={styles.navButtonText}>Наступне запитання</Text>
+                        <Text style={styles.navButtonText}>
+                            {currentQuestionIndex === testQuestions.length - 1 ? "Завершити тест" : "Наступне запитання"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -215,28 +230,25 @@ const styles = StyleSheet.create({
         backgroundColor: "#CCD4C5",
     },
     header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingTop: 55,
         padding: 16,
-        backgroundColor: '#A9B4AC',
+        backgroundColor: "#A9B4AC",
         borderBottomWidth: 1,
-        borderBottomColor: '#6A776D',
+        borderBottomColor: "#6A776D",
     },
     headerTitle: {
         fontSize: 24,
-        fontWeight: '600',
-        color: '#344939',
+        fontWeight: "600",
+        color: "#344939",
+        marginBottom: 12,
     },
     retakeButton: {
         flexDirection: "row",
         alignItems: "center",
         gap: 8,
-        backgroundColor: "#A9B4AC",
+        backgroundColor: "#CCD4C5",
         padding: 12,
         borderRadius: 8,
-        alignSelf: "center",
+        alignSelf: "flex-start",
     },
     retakeButtonText: {
         color: "#344939",
@@ -244,7 +256,7 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     headerIcons: {
-        flexDirection: 'row',
+        flexDirection: "row",
         gap: 16,
     },
     iconButton: {
@@ -343,6 +355,23 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#6A776D",
         textAlign: "right",
+    },
+    aiSuggestionsContainer: {
+        backgroundColor: "#A9B4AC",
+        borderRadius: 8,
+        padding: 16,
+        marginTop: 24,
+    },
+    aiSuggestionsTitle: {
+        fontSize: 18,
+        fontWeight: "600",
+        color: "#344939",
+        marginBottom: 8,
+    },
+    aiSuggestionsText: {
+        fontSize: 14,
+        color: "#344939",
+        lineHeight: 20,
     },
 })
 
