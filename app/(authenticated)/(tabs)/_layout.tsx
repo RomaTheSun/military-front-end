@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router"
-import { BookOpen, User2 } from "lucide-react-native"
+import { BookOpen, User2, ClipboardCheck } from "lucide-react-native"
 
 export default function TabsLayout() {
     return (
@@ -23,6 +23,13 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
+                name="profession-test"
+                options={{
+                    tabBarLabel: "",
+                    tabBarIcon: ({ color, size }) => <ClipboardCheck color={color} size={size} />,
+                }}
+            />
+            <Tabs.Screen
                 name="profile"
                 options={{
                     tabBarLabel: "",
@@ -30,9 +37,8 @@ export default function TabsLayout() {
                 }}
             />
             <Tabs.Screen
-
                 name="course/[id]"
-                options={{tabBarItemStyle: {display: 'none'}}}
+                options={{ tabBarItemStyle: { display: 'none' } }}
             />
         </Tabs>
     )
