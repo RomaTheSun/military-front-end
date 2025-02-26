@@ -1,15 +1,16 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native"
-import { Settings, Share2, CheckSquare, Square, LogOut, RotateCcw } from "lucide-react-native"
+import { useState, useEffect } from "react"
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native"
+import { Settings, Share2, CheckSquare, Square, RotateCcw, LogOut } from "lucide-react-native"
 import { useRouter } from "expo-router"
-import { testQuestions, type MilitaryProfession, professionDescriptions } from "../../../types/profession-test"
 import AsyncStorage from "@react-native-async-storage/async-storage"
+import { apiUrl } from "../../../config"
+import type { ProfessionTest, ProfessionDescription, MilitaryProfession } from "../../../types/profession-test"
 
 interface Answer {
-    questionId: number
-    optionId: number
+    questionId: string
+    optionId: string
 }
 
 export default function ProfessionTestScreen() {
@@ -17,32 +18,84 @@ export default function ProfessionTestScreen() {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
     const [answers, setAnswers] = useState<Answer[]>([])
     const [isComplete, setIsComplete] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [professionTest, setProfessionTest] = useState<ProfessionTest | null>(null)
+    const [professionDescriptions, setProfessionDescriptions] = useState<ProfessionDescription[]>([])
 
-    const currentQuestion = testQuestions[currentQuestionIndex]
+    useEffect(() => {
+        fetchTestData()
+    }, [])
 
-    const handleAnswer = (optionId: number) => {
+    const fetchTestData = async () => {
+        try {
+            setIsLoading(true)
+            setError(null)
+            const token = await AsyncStorage.getItem("accessToken")
+            if (!token) throw new Error("No access token found")
+
+            const [testResponse, descriptionsResponse] = await Promise.all([
+                fetch(`${apiUrl}/profession-tests/bc1c1aaa-a2f4-40b2-a01b-7c67fe8ac8ea`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                fetch(`${apiUrl}/profession_descriptions`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+            ])
+
+            if (!testResponse.ok || !descriptionsResponse.ok) {
+                throw new Error("Failed to fetch data")
+            }
+
+            const testData: ProfessionTest = await testResponse.json()
+            const descriptionsData: ProfessionDescription[] = await descriptionsResponse.json()
+
+            setProfessionTest(testData)
+            setProfessionDescriptions(descriptionsData)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "An unexpected error occurred")
+        } finally {
+            setIsLoading(false)
+        }
+    }
+
+    const handleAnswer = (optionId: string) => {
         const newAnswers = [...answers]
-        const existingAnswerIndex = newAnswers.findIndex((a) => a.questionId === currentQuestion.id)
+        const existingAnswerIndex = newAnswers.findIndex(
+            (a) => a.questionId === professionTest?.questions[currentQuestionIndex].id,
+        )
 
         if (existingAnswerIndex !== -1) {
             newAnswers[existingAnswerIndex] = {
-                questionId: currentQuestion.id,
+                questionId: professionTest!.questions[currentQuestionIndex].id,
                 optionId,
             }
         } else {
             newAnswers.push({
-                questionId: currentQuestion.id,
+                questionId: professionTest!.questions[currentQuestionIndex].id,
                 optionId,
             })
         }
 
         setAnswers(newAnswers)
     }
+
     const resetTest = () => {
         setCurrentQuestionIndex(0)
         setAnswers([])
         setIsComplete(false)
     }
+
+    const handleLogout = async () => {
+        try {
+            await AsyncStorage.removeItem('accessToken');
+            await AsyncStorage.removeItem('refreshToken');
+            router.replace('/login');
+        } catch (error) {
+            console.error('Error logging out:', error);
+        }
+    };
+
     const calculateResults = () => {
         const scores: Record<MilitaryProfession, number> = {
             combat_officer: 0,
@@ -53,17 +106,16 @@ export default function ProfessionTestScreen() {
         }
 
         answers.forEach((answer) => {
-            const question = testQuestions.find((q) => q.id === answer.questionId)
-            const option = question?.options.find((o) => o.id === answer.optionId)
+            const question = professionTest?.questions.find((q) => q.id === answer.questionId)
+            const option = question?.question_options.find((o) => o.id === answer.optionId)
 
             if (option) {
-                Object.entries(option.scores).forEach(([profession, score]) => {
-                    scores[profession as MilitaryProfession] += score
+                option.option_scores.forEach(({ profession, score }) => {
+                    scores[profession] += score
                 })
             }
         })
 
-        // Convert to percentages
         const total = Object.values(scores).reduce((a, b) => a + b, 0)
         const percentages = Object.entries(scores).reduce(
             (acc, [profession, score]) => ({
@@ -77,7 +129,7 @@ export default function ProfessionTestScreen() {
     }
 
     const goToNextQuestion = () => {
-        if (currentQuestionIndex < testQuestions.length - 1) {
+        if (currentQuestionIndex < (professionTest?.questions.length || 0) - 1) {
             setCurrentQuestionIndex(currentQuestionIndex + 1)
         } else {
             setIsComplete(true)
@@ -90,17 +142,35 @@ export default function ProfessionTestScreen() {
         }
     }
 
-    const selectedOptionId = answers.find((a) => a.questionId === currentQuestion.id)?.optionId
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#344939" />
+            </View>
+        )
+    }
 
-    const handleLogout = async () => {
-        try {
-            await AsyncStorage.removeItem('accessToken');
-            await AsyncStorage.removeItem('refreshToken');
-            router.replace('/login');
-        } catch (error) {
-            console.error('Error logging out:', error);
-        }
-    };
+    if (error) {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>{error}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={fetchTestData}>
+                    <Text style={styles.retryButtonText}>Спробувати знову</Text>
+                </TouchableOpacity>
+            </View>
+        )
+    }
+
+    if (!professionTest) {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Не вдалося завантажити тест</Text>
+            </View>
+        )
+    }
+
+    const currentQuestion = professionTest.questions[currentQuestionIndex]
+    const selectedOptionId = answers.find((a) => a.questionId === currentQuestion.id)?.optionId
 
     if (isComplete) {
         const results = calculateResults()
@@ -131,21 +201,24 @@ export default function ProfessionTestScreen() {
                     </View>
                 </View>
                 <ScrollView style={styles.content}>
-                    <TouchableOpacity style={styles.retakeButton} onPress={resetTest}>
-                        <RotateCcw size={24} color="#344939" />
-                        <Text style={styles.retakeButtonText}>Пройти тест знову</Text>
-                    </TouchableOpacity>
+                <TouchableOpacity style={styles.retakeButton} onPress={resetTest}>
+                    <RotateCcw size={24} color="#344939" />
+                    <Text style={styles.retakeButtonText}>Пройти тест знову</Text>
+                </TouchableOpacity>
                     <Text style={styles.resultsTitle}>Ваші результати показують наступну сумісність:</Text>
-                    {sortedResults.map(({ profession, percentage }) => (
-                        <View key={profession} style={styles.resultItem}>
-                            <Text style={styles.professionTitle}>{professionDescriptions[profession].title}</Text>
-                            <Text style={styles.professionDescription}>{professionDescriptions[profession].description}</Text>
-                            <View style={styles.progressBar}>
-                                <View style={[styles.progressFill, { width: `${percentage}%` }]} />
+                    {sortedResults.map(({ profession, percentage }) => {
+                        const description = professionDescriptions.find((desc) => desc.profession === profession)
+                        return (
+                            <View key={profession} style={styles.resultItem}>
+                                <Text style={styles.professionTitle}>{description?.title || profession}</Text>
+                                <Text style={styles.professionDescription}>{description?.description || "Опис недоступний"}</Text>
+                                <View style={styles.progressBar}>
+                                    <View style={[styles.progressFill, { width: `${percentage}%` }]} />
+                                </View>
+                                <Text style={styles.percentageText}>{percentage}%</Text>
                             </View>
-                            <Text style={styles.percentageText}>{percentage}%</Text>
-                        </View>
-                    ))}
+                        )
+                    })}
                 </ScrollView>
             </View>
         )
@@ -156,30 +229,26 @@ export default function ProfessionTestScreen() {
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Тест</Text>
                 <View style={styles.headerIcons}>
-                    <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={() => router.push("/(authenticated)/settings")}
-                    >
+                    <TouchableOpacity style={styles.iconButton}>
                         <Settings size={24} color="#344939" />
                     </TouchableOpacity>
-                    <TouchableOpacity
-                        style={styles.iconButton}
-                        onPress={handleLogout}
-                    >
-                        <LogOut size={24} color="#344939" />
+                    <TouchableOpacity style={styles.iconButton}>
+                        <Share2 size={24} color="#344939" />
                     </TouchableOpacity>
                 </View>
             </View>
 
             <View style={styles.content}>
-                <Text style={styles.questionNumber}>Запитання {currentQuestionIndex + 1}</Text>
+                <Text style={styles.questionNumber}>
+                    Запитання {currentQuestionIndex + 1} з {professionTest.questions.length}
+                </Text>
                 <View style={styles.questionCard}>
-                    <Text style={styles.questionText}>{currentQuestion.text}</Text>
+                    <Text style={styles.questionText}>{currentQuestion.question_text}</Text>
                 </View>
 
-                {currentQuestion.options.map((option) => (
+                {currentQuestion.question_options.map((option) => (
                     <TouchableOpacity key={option.id} style={styles.optionButton} onPress={() => handleAnswer(option.id)}>
-                        <Text style={styles.optionText}>{option.text}</Text>
+                        <Text style={styles.optionText}>{option.option_text}</Text>
                         {selectedOptionId === option.id ? (
                             <CheckSquare size={24} color="#344939" />
                         ) : (
@@ -201,7 +270,9 @@ export default function ProfessionTestScreen() {
                         onPress={goToNextQuestion}
                         disabled={!selectedOptionId}
                     >
-                        <Text style={styles.navButtonText}>Наступне запитання</Text>
+                        <Text style={styles.navButtonText}>
+                            {currentQuestionIndex === professionTest.questions.length - 1 ? "Завершити тест" : "Наступне запитання"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
             </View>
@@ -213,6 +284,36 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#CCD4C5",
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#CCD4C5",
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#CCD4C5",
+        padding: 20,
+    },
+    errorText: {
+        fontSize: 18,
+        color: "#344939",
+        textAlign: "center",
+        marginBottom: 20,
+    },
+    retryButton: {
+        backgroundColor: "#344939",
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 8,
+    },
+    retryButtonText: {
+        color: "#CCD4C5",
+        fontSize: 16,
+        fontWeight: "500",
     },
     header: {
         flexDirection: 'row',
@@ -226,8 +327,9 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         fontSize: 24,
-        fontWeight: '600',
-        color: '#344939',
+        fontWeight: "600",
+        color: "#344939",
+        marginBottom: 12,
     },
     retakeButton: {
         flexDirection: "row",
@@ -244,7 +346,7 @@ const styles = StyleSheet.create({
         fontWeight: "500",
     },
     headerIcons: {
-        flexDirection: 'row',
+        flexDirection: "row",
         gap: 16,
     },
     iconButton: {
